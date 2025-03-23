@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -41,37 +42,43 @@ func main() {
 
 	qURL := "https://sqs.ap-south-1.amazonaws.com/254797531501/Temp2Process"
 
-	result, err := svc.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
-		QueueUrl:            aws.String(qURL),
-		MaxNumberOfMessages: 1,
-		VisibilityTimeout:   60,
-		WaitTimeSeconds:     10,
-	})
+	// Continuous polling loop
+	for {
+		result, err := svc.ReceiveMessage(context.TODO(), &sqs.ReceiveMessageInput{
+			QueueUrl:            aws.String(qURL),
+			MaxNumberOfMessages: 1,
+			VisibilityTimeout:   60,
+			WaitTimeSeconds:     10,
+		})
 
-	if err != nil {
-		fmt.Println("Error", err)
-		return
+		if err != nil {
+			fmt.Println("Error receiving messages:", err)
+			time.Sleep(10 * time.Second)
+			continue
+		}
+
+		if len(result.Messages) == 0 {
+			fmt.Println("No messages received")
+			continue
+		}
+
+		for _, message := range result.Messages {
+			fmt.Printf("Message ID: %s\n", *message.MessageId)
+			fmt.Printf("Message Body: %s\n", *message.Body)
+
+			
+
+			// Delete the message from the queue after processing
+			_, err := svc.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+				QueueUrl:      aws.String(qURL),
+				ReceiptHandle: message.ReceiptHandle,
+			})
+
+			if err != nil {
+				fmt.Println("Error deleting message:", err)
+			} else {
+				fmt.Println("Message deleted successfully")
+			}
+		}
 	}
-
-	if len(result.Messages) == 0 {
-		fmt.Println("Received no messages")
-		return
-	}
-
-    for _, message := range result.Messages {
-        fmt.Printf("Message ID: %s\n", *message.MessageId)
-        fmt.Printf("Message Body: %s\n", *message.Body)
-
-        // Delete the message from the queue
-        _, err := svc.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
-            QueueUrl:      aws.String(qURL),
-            ReceiptHandle: message.ReceiptHandle,
-        })
-
-        if err != nil {
-            log.Fatalf("Error deleting message: %v", err)
-        }
-
-        fmt.Println("Message Deleted")
-    }
 }
