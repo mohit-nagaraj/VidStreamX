@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -25,14 +26,14 @@ func main() {
 		log.Fatalf("AWS_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set in the environment.")
 	}
 	cfg, err := config.LoadDefaultConfig(
-        context.TODO(), 
-        config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
-		    AWS_ACCESS_KEY_ID,
-		    AWS_SECRET_ACCESS_KEY,
-		    "",
-	    )), 
-        config.WithRegion(AWS_REGION),
-    )
+		context.TODO(),
+		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
+			AWS_ACCESS_KEY_ID,
+			AWS_SECRET_ACCESS_KEY,
+			"",
+		)),
+		config.WithRegion(AWS_REGION),
+	)
 	if err != nil {
 		log.Fatalf("unable to load SDK config, %v", err)
 	}
@@ -63,22 +64,37 @@ func main() {
 		}
 
 		for _, message := range result.Messages {
-			fmt.Printf("Message ID: %s\n", *message.MessageId)
+			var s3Event S3Event
 			fmt.Printf("Message Body: %s\n", *message.Body)
+			errBdy := json.Unmarshal([]byte(*message.Body), &s3Event)
+			if errBdy != nil {
+				fmt.Println("Error parsing message body:", err)
+				continue
+			}
+			if s3Event.Event == "s3:TestEvent" {
+				fmt.Println("Skipping test event")
+				continue
+			}
 
-			
+			fmt.Printf("Message ID: %s\n", *message.MessageId)
+
+			for _, record := range s3Event.Records {
+				bucketName := record.S3.Bucket.Name
+				objectKey := record.S3.Object.Key
+				fmt.Printf("Processing file %s from bucket %s\n", objectKey, bucketName)
+			}
 
 			// Delete the message from the queue after processing
-			_, err := svc.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
+			_, err = svc.DeleteMessage(context.TODO(), &sqs.DeleteMessageInput{
 				QueueUrl:      aws.String(qURL),
 				ReceiptHandle: message.ReceiptHandle,
 			})
 
 			if err != nil {
 				fmt.Println("Error deleting message:", err)
-			} else {
-				fmt.Println("Message deleted successfully")
+				continue
 			}
+			fmt.Println("Message deleted successfully")
 		}
 	}
 }
