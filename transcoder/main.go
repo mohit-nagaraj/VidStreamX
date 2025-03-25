@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -54,4 +55,24 @@ func main() {
 		log.Fatalf("Failed to download video: %v", err)
 	}
 
+	resolutions := []struct {
+		width  int
+		height int
+	}{
+		{1920, 1080},
+		{1280, 720},
+		{854, 480},
+		{640, 360},
+		{426, 240},
+	}
+
+	for _, res := range resolutions {
+		outputPath := fmt.Sprintf("videos/formatted/%dp.mp4", res.height)
+		if err := utils.TranscodeVideo(videoPath, outputPath, res.width, res.height); err != nil {
+			log.Printf("Failed to transcode video to %dp: %v", res.height, err)
+			continue
+		}
+		fmt.Printf("Transcoded video to %dp: %s\n", res.height, outputPath)
+	}
+	fmt.Println("All videos transcoded successfully")
 }
