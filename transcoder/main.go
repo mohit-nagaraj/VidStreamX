@@ -67,12 +67,11 @@ func main() {
 	}
 
 	for _, res := range resolutions {
-		outputPath := fmt.Sprintf("videos/formatted/%dp.mp4", res.height)
+		outputPath := fmt.Sprintf("formatted/%dp.mp4", res.height)
 		if err := utils.TranscodeVideo(videoPath, outputPath, res.width, res.height); err != nil {
 			log.Printf("Failed to transcode video to %dp: %v", res.height, err)
 			continue
 		}
-		fmt.Printf("Transcoded video to %dp: %s\n", res.height, outputPath)
 	}
-	fmt.Println("All videos transcoded successfully")
+	fmt.Println("All videos done processing")
 }
