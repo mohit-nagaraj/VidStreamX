@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -74,4 +75,10 @@ func main() {
 		}
 	}
 	fmt.Println("All videos done processing")
+	baseKey := filepath.Join(*objectKey, "formatted")
+	bucketName2 := "frmt-video.momo"
+	if err := utils.UploadDirectoryToS3(s3Client, bucketName2, baseKey, "formatted"); err != nil {
+		log.Fatalf("Failed to upload transcoded files to S3: %v", err)
+	}
+	fmt.Println("All videos uploaded to S3")
 }
