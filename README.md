@@ -55,6 +55,8 @@ The VidStreamX pipeline consists of two main components:
     ]
     ```
 4. Configure an event notification in the S3 bucket to send messages to the SQS queue for `.mp4` file uploads.
+5. Build the image for transcoder, upload it to ECR (export all env & use push commands displayed)
+6. Make a ecs cluster (fargate). Create a task defination & provide uri of your image.
 
 ### Components
 

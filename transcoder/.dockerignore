@@ -4,3 +4,5 @@ Dockerfile
 **/*.md
 **/*_test.go
 bin/
+/videos
+/formatted

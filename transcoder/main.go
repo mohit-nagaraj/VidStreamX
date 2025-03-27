@@ -80,5 +80,6 @@ func main() {
 	if err := utils.UploadDirectoryToS3(s3Client, bucketName2, baseKey, "formatted"); err != nil {
 		log.Fatalf("Failed to upload transcoded files to S3: %v", err)
 	}
+
 	fmt.Println("All videos uploaded to S3")
 }
