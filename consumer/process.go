@@ -11,11 +11,11 @@ import (
 
 // LaunchECSTask launches an ECS task with the specified configuration
 func LaunchECSTask(ecsClient *ecs.Client, bucketName, objectKey string) error {
-	
+
 	input := &ecs.RunTaskInput{
 		Cluster:        aws.String("arn:aws:ecs:ap-south-1:254797531501:cluster/TranscoderCluster2"),
 		LaunchType:     types.LaunchTypeFargate,
-		TaskDefinition: aws.String("video-transcoder"),
+		TaskDefinition: aws.String("arn:aws:ecs:ap-south-1:254797531501:task-definition/video-transcoder"),
 		NetworkConfiguration: &types.NetworkConfiguration{
 			AwsvpcConfiguration: &types.AwsVpcConfiguration{
 				AssignPublicIp: types.AssignPublicIpEnabled,
@@ -31,7 +31,7 @@ func LaunchECSTask(ecsClient *ecs.Client, bucketName, objectKey string) error {
 		Overrides: &types.TaskOverride{
 			ContainerOverrides: []types.ContainerOverride{
 				{
-					Name: aws.String("video-transcoder"),
+					Name: aws.String("vidstreamx"),
 					Command: []string{
 						"-bucket=" + bucketName,
 						"-key=" + objectKey,
