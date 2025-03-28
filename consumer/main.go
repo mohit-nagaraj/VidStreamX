@@ -8,9 +8,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/ecs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/joho/godotenv"
 )
@@ -41,6 +43,9 @@ func main() {
 	// SQS service client
 	svc := sqs.NewFromConfig(cfg)
 
+	// ECS client
+	ecsClient := ecs.NewFromConfig(cfg)
+
 	qURL := "https://sqs.ap-south-1.amazonaws.com/254797531501/Temp2Process"
 
 	// Continuous polling loop
@@ -64,14 +69,14 @@ func main() {
 		}
 
 		for _, message := range result.Messages {
-			var s3Event S3Event
+			var s3Event events.S3Event
 			fmt.Printf("Message Body: %s\n", *message.Body)
 			errBdy := json.Unmarshal([]byte(*message.Body), &s3Event)
 			if errBdy != nil {
 				fmt.Println("Error parsing message body:", err)
 				continue
 			}
-			if s3Event.Event == "s3:TestEvent" {
+			if len(s3Event.Records) > 0 && s3Event.Records[0].EventName == "s3:TestEvent" {
 				fmt.Println("Skipping test event")
 				continue
 			}
@@ -82,6 +87,11 @@ func main() {
 				bucketName := record.S3.Bucket.Name
 				objectKey := record.S3.Object.Key
 				fmt.Printf("Processing file %s from bucket %s\n", objectKey, bucketName)
+
+				// launch ecs task: use ecs create task on ui to all values there n put it in here
+				if err := LaunchECSTask(ecsClient, bucketName, objectKey); err != nil {
+					fmt.Printf("Failed to launch ECS task: %v\n", err)
+				}
 			}
 
 			// Delete the message from the queue after processing
